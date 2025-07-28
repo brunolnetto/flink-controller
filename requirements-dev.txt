@@ -1,0 +1,59 @@
+# Development dependencies for Flink Job Controller
+# These are additional tools beyond the core requirements
+
+# Testing and coverage
+pytest-cov>=6.2.1
+pytest-mock>=3.12.0
+pytest-asyncio>=0.21.1
+pytest-xdist>=3.3.1  # Parallel test execution
+
+# Code quality and formatting
+black>=23.12.0
+isort>=5.13.0
+flake8>=6.1.0
+mypy>=1.7.0
+
+# Pre-commit hooks
+pre-commit>=3.5.0
+
+# Security scanning
+bandit>=1.7.5
+safety>=2.3.0
+
+# Documentation
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0
+
+# Development utilities
+just>=1.19.0  # Command runner
+rich>=13.7.0  # Beautiful terminal output
+click>=8.1.7  # CLI framework
+
+# Monitoring and observability (for testing)
+prometheus-client>=0.19.0
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+
+# Contract testing
+pact-python>=1.0.0
+
+# Chaos engineering (for testing)
+chaostoolkit>=1.15.0
+chaostoolkit-kubernetes>=0.26.0
+
+# Performance testing
+locust>=2.17.0
+
+# API testing
+httpx>=0.25.0
+pytest-httpx>=0.25.0
+
+# Database testing
+pytest-postgresql>=4.1.0
+redis>=5.0.1
+
+# Docker testing
+pytest-docker>=2.0.0
+
+# Environment management
+python-dotenv>=1.0.0 
