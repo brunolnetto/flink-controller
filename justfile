@@ -41,12 +41,6 @@ build:
     echo "🔨 Building application..."
     python3 -m build
 
-# Deploy to target environment
-deploy:
-    echo "🚀 Deploying application..."
-    # Add deployment logic here
-    echo "✅ Deployment completed"
-
 # =============================================================================
 # QUALITY COMMANDS (3 commands)
 # =============================================================================
