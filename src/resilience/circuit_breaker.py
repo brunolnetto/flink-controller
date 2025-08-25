@@ -46,7 +46,7 @@ class CircuitBreaker:
         self.expected_exception = expected_exception
         
         # State tracking
-        self.state = CircuitState.CLOSED
+        self._state = CircuitState.CLOSED
         self.failure_count = 0
         self.last_failure_time = None
     
@@ -67,9 +67,9 @@ class CircuitBreaker:
             Exception: If function raises an exception
         """
         # Check if circuit is open and should attempt reset
-        if self.state == CircuitState.OPEN:
+        if self._state == CircuitState.OPEN:
             if self._should_attempt_reset():
-                self.state = CircuitState.HALF_OPEN
+                self._state = CircuitState.HALF_OPEN
             else:
                 raise CircuitBreakerError("Circuit breaker is OPEN")
         
@@ -91,8 +91,8 @@ class CircuitBreaker:
     
     def _on_success(self):
         """Handle successful function call."""
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.CLOSED
+        if self._state == CircuitState.HALF_OPEN:
+            self._state = CircuitState.CLOSED
             self.failure_count = 0
             self.last_failure_time = None
     
@@ -102,11 +102,11 @@ class CircuitBreaker:
         self.last_failure_time = time.time()
         
         if self.failure_count >= self.failure_threshold:
-            self.state = CircuitState.OPEN
+            self._state = CircuitState.OPEN
     
     def reset(self):
         """Manually reset the circuit breaker."""
-        self.state = CircuitState.CLOSED
+        self._state = CircuitState.CLOSED
         self.failure_count = 0
         self.last_failure_time = None
     
@@ -123,4 +123,17 @@ class CircuitBreaker:
     @property
     def is_half_open(self) -> bool:
         """Check if circuit is half-open."""
-        return self.state == CircuitState.HALF_OPEN 
+        return self.state == CircuitState.HALF_OPEN
+    
+    @property
+    def state(self) -> CircuitState:
+        """Get current circuit state, checking for auto-transitions."""
+        # Auto-transition from OPEN to HALF_OPEN if recovery timeout has passed
+        if self._state == CircuitState.OPEN and self._should_attempt_reset():
+            self._state = CircuitState.HALF_OPEN
+        return self._state
+    
+    @state.setter
+    def state(self, value: CircuitState):
+        """Set circuit state."""
+        self._state = value 

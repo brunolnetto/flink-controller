@@ -1,0 +1,10 @@
+artifact_path: /artifacts/sample.jar
+checkpoint_interval: 60000
+cpu_cores: 1
+job_id: sample-streaming-job
+job_type: streaming
+max_restart_attempts: 3
+memory: 1g
+parallelism: 2
+restart_strategy: fixed-delay
+savepoint_trigger_interval: 300000

@@ -1,0 +1,13 @@
+artifact_path: /artifacts/data-pipeline.jar
+artifact_signature: null
+checkpoint_interval: 60000
+checkpoint_timeout: null
+cpu_cores: 2
+job_id: data-pipeline-streaming
+job_type: streaming
+max_restart_attempts: 3
+memory: 2g
+parallelism: 4
+restart_strategy: fixed-delay
+savepoint_path: null
+savepoint_trigger_interval: 300000

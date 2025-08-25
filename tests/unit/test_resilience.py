@@ -74,12 +74,16 @@ class TestCircuitBreaker:
             circuit_breaker.call(mock_function)
 
         # Act - Second failure (should open circuit)
-        with pytest.raises(CircuitBreakerError, match="Circuit breaker is OPEN"):
+        with pytest.raises(Exception, match="Test error"):
             circuit_breaker.call(mock_function)
 
-        # Assert
+        # Assert circuit is now open
         assert circuit_breaker.state == CircuitState.OPEN
         assert circuit_breaker.failure_count == 2
+        
+        # Act - Third call should fail fast
+        with pytest.raises(CircuitBreakerError, match="Circuit breaker is OPEN"):
+            circuit_breaker.call(mock_function)
 
     def test_circuit_breaker_opens_after_threshold_reached_with_different_functions(self):
         """Test that circuit breaker opens after threshold is reached with different functions."""
@@ -97,6 +101,14 @@ class TestCircuitBreaker:
             circuit_breaker.call(mock_function1)
 
         # Act - Second failure (should open circuit)
+        with pytest.raises(Exception, match="Test error 2"):
+            circuit_breaker.call(mock_function2)
+
+        # Assert circuit is now open
+        assert circuit_breaker.state == CircuitState.OPEN
+        assert circuit_breaker.failure_count == 2
+        
+        # Act - Third call should fail fast
         with pytest.raises(CircuitBreakerError, match="Circuit breaker is OPEN"):
             circuit_breaker.call(mock_function2)
 
