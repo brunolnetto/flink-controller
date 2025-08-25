@@ -5,16 +5,19 @@ This module tests the ArtifactVerifier class which handles verification
 of Flink job artifacts and their digital signatures.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
 import hashlib
-import tempfile
 import os
+import tempfile
 from pathlib import Path
+from typing import Any, Dict
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Import the classes we'll be testing
-from src.security.artifact_verifier import ArtifactVerifier, VerificationResult, VerificationError
+from src.security.artifact_verifier import (ArtifactVerifier,
+                                            VerificationError,
+                                            VerificationResult)
 
 
 class TestArtifactVerifier:
@@ -31,14 +34,12 @@ class TestArtifactVerifier:
         """Test successful digital signature verification."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Act
         result = verifier.verify_digital_signature(
-            self.test_artifact_path,
-            self.test_signature_path,
-            self.test_public_key_path
+            self.test_artifact_path, self.test_signature_path, self.test_public_key_path
         )
-        
+
         # Assert
         assert isinstance(result, VerificationResult)
         assert result.success is True
@@ -48,53 +49,61 @@ class TestArtifactVerifier:
         """Test digital signature verification failure."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Mock the verify_digital_signature method to raise an exception
-        with patch.object(verifier, 'verify_digital_signature', side_effect=VerificationError("Digital signature verification failed")):
+        with patch.object(
+            verifier,
+            "verify_digital_signature",
+            side_effect=VerificationError("Digital signature verification failed"),
+        ):
             # Act & Assert
-            with pytest.raises(VerificationError, match="Digital signature verification failed"):
+            with pytest.raises(
+                VerificationError, match="Digital signature verification failed"
+            ):
                 verifier.verify_digital_signature(
                     "/invalid/artifact.jar",
                     "/invalid/signature.sig",
-                    "/invalid/public-key.pem"
+                    "/invalid/public-key.pem",
                 )
 
     def test_verify_digital_signature_exception_handling(self):
         """Test digital signature verification exception handling."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Mock the verify_digital_signature method to raise a generic exception
-        with patch.object(verifier, 'verify_digital_signature', side_effect=Exception("Generic error")):
+        with patch.object(
+            verifier, "verify_digital_signature", side_effect=Exception("Generic error")
+        ):
             # Act & Assert
-            with pytest.raises(VerificationError, match="Digital signature verification failed"):
+            with pytest.raises(
+                VerificationError, match="Digital signature verification failed"
+            ):
                 verifier.verify_digital_signature(
                     "/path/to/artifact.jar",
                     "/path/to/signature.sig",
-                    "/path/to/public-key.pem"
+                    "/path/to/public-key.pem",
                 )
 
     def test_verify_checksum_success(self):
         """Test successful checksum verification."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with known content
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Calculate expected checksum
             expected_checksum = verifier.calculate_checksum(temp_file_path, "sha256")
-            
+
             # Act
             result = verifier.verify_checksum(
-                temp_file_path,
-                expected_checksum,
-                "sha256"
+                temp_file_path, expected_checksum, "sha256"
             )
-            
+
             # Assert
             assert isinstance(result, VerificationResult)
             assert result.success is True
@@ -108,13 +117,11 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         invalid_checksum = "invalid_checksum"
-        
+
         # Act & Assert
         with pytest.raises(VerificationError, match="Checksum verification failed"):
             verifier.verify_checksum(
-                self.test_artifact_path,
-                invalid_checksum,
-                "sha256"
+                self.test_artifact_path, invalid_checksum, "sha256"
             )
 
     def test_verify_checksum_unsupported_algorithm(self):
@@ -122,29 +129,27 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         checksum = "a1b2c3d4e5f6"
-        
+
         # Act & Assert
         with pytest.raises(VerificationError, match="Unsupported checksum algorithm"):
             verifier.verify_checksum(
-                self.test_artifact_path,
-                checksum,
-                "unsupported_algorithm"
+                self.test_artifact_path, checksum, "unsupported_algorithm"
             )
 
     def test_verify_file_integrity_success(self):
         """Test successful file integrity verification."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             result = verifier.verify_file_integrity(temp_file_path)
-            
+
             # Assert
             assert isinstance(result, VerificationResult)
             assert result.success is True
@@ -158,25 +163,27 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         non_existent_path = "/non/existent/file.jar"
-        
+
         # Act & Assert
-        with pytest.raises(VerificationError, match="File integrity verification failed"):
+        with pytest.raises(
+            VerificationError, match="File integrity verification failed"
+        ):
             verifier.verify_file_integrity(non_existent_path)
 
     def test_verify_artifact_completeness_success(self):
         """Test successful artifact completeness verification."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with .jar extension
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as temp_file:
             temp_file.write(b"test jar content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             result = verifier.verify_artifact_completeness(temp_file_path)
-            
+
             # Assert
             assert isinstance(result, VerificationResult)
             assert result.success is True
@@ -190,26 +197,34 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         corrupted_path = "/path/to/corrupted-artifact.jar"
-        
+
         # Act & Assert
-        with pytest.raises(VerificationError, match="Artifact completeness verification failed"):
+        with pytest.raises(
+            VerificationError, match="Artifact completeness verification failed"
+        ):
             verifier.verify_artifact_completeness(corrupted_path)
 
     def test_verify_artifact_completeness_exception_handling(self):
         """Test artifact completeness verification exception handling."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as temp_file:
             temp_file.write(b"test jar content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Mock validate_file_format to raise an exception
-            with patch.object(verifier, 'validate_file_format', side_effect=Exception("Validation error")):
+            with patch.object(
+                verifier,
+                "validate_file_format",
+                side_effect=Exception("Validation error"),
+            ):
                 # Act & Assert
-                with pytest.raises(VerificationError, match="Artifact completeness verification failed"):
+                with pytest.raises(
+                    VerificationError, match="Artifact completeness verification failed"
+                ):
                     verifier.verify_artifact_completeness(temp_file_path)
         finally:
             # Cleanup
@@ -219,24 +234,24 @@ class TestArtifactVerifier:
         """Test successful verification of all checks."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with .jar extension
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as temp_file:
             temp_file.write(b"test jar content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Calculate expected checksum
             expected_checksum = verifier.calculate_checksum(temp_file_path, "sha256")
-            
+
             # Act
             result = verifier.verify_all_checks(
                 temp_file_path,
                 "/path/to/signature.sig",
                 "/path/to/public-key.pem",
-                expected_checksum
+                expected_checksum,
             )
-            
+
             # Assert
             assert isinstance(result, VerificationResult)
             assert result.success is True
@@ -250,12 +265,12 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         invalid_checksum = "invalid_checksum"
-        
+
         # Create a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.jar', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as temp_file:
             temp_file.write(b"test jar content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act & Assert
             with pytest.raises(VerificationError, match="Artifact verification failed"):
@@ -263,7 +278,7 @@ class TestArtifactVerifier:
                     temp_file_path,
                     "/path/to/signature.sig",
                     "/path/to/public-key.pem",
-                    invalid_checksum
+                    invalid_checksum,
                 )
         finally:
             # Cleanup
@@ -273,16 +288,16 @@ class TestArtifactVerifier:
         """Test SHA256 checksum calculation."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with known content
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             checksum = verifier.calculate_checksum(temp_file_path, "sha256")
-            
+
             # Assert
             assert isinstance(checksum, str)
             assert len(checksum) == 64  # SHA256 produces 64 hex characters
@@ -294,16 +309,16 @@ class TestArtifactVerifier:
         """Test SHA1 checksum calculation."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with known content
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             checksum = verifier.calculate_checksum(temp_file_path, "sha1")
-            
+
             # Assert
             assert isinstance(checksum, str)
             assert len(checksum) == 40  # SHA1 produces 40 hex characters
@@ -315,16 +330,16 @@ class TestArtifactVerifier:
         """Test MD5 checksum calculation."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file with known content
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             checksum = verifier.calculate_checksum(temp_file_path, "md5")
-            
+
             # Assert
             assert isinstance(checksum, str)
             assert len(checksum) == 32  # MD5 produces 32 hex characters
@@ -336,7 +351,7 @@ class TestArtifactVerifier:
         """Test checksum calculation with unsupported algorithm."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Act & Assert
         with pytest.raises(VerificationError, match="Unsupported checksum algorithm"):
             verifier.calculate_checksum(self.test_artifact_path, "unsupported")
@@ -345,10 +360,10 @@ class TestArtifactVerifier:
         """Test successful file format validation."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Act
         result = verifier.validate_file_format(self.test_artifact_path)
-        
+
         # Assert
         assert result is True
 
@@ -357,7 +372,7 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         invalid_format_path = "/path/to/invalid-file.txt"
-        
+
         # Act & Assert
         with pytest.raises(VerificationError, match="Invalid file format"):
             verifier.validate_file_format(invalid_format_path)
@@ -366,9 +381,9 @@ class TestArtifactVerifier:
         """Test file format validation exception handling."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Mock Path to raise an exception
-        with patch('pathlib.Path', side_effect=Exception("Path error")):
+        with patch("pathlib.Path", side_effect=Exception("Path error")):
             # Act & Assert
             with pytest.raises(VerificationError, match="Invalid file format"):
                 verifier.validate_file_format("/path/to/file.jar")
@@ -377,14 +392,12 @@ class TestArtifactVerifier:
         """Test successful signature verification with public key."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Act
         result = verifier.verify_signature_with_public_key(
-            self.test_artifact_path,
-            self.test_signature_path,
-            self.test_public_key_path
+            self.test_artifact_path, self.test_signature_path, self.test_public_key_path
         )
-        
+
         # Assert
         assert result is True
 
@@ -392,15 +405,23 @@ class TestArtifactVerifier:
         """Test signature verification failure with public key."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Mock the verify_signature_with_public_key method to raise an exception
-        with patch.object(verifier, 'verify_signature_with_public_key', side_effect=VerificationError("Signature verification with public key failed")):
+        with patch.object(
+            verifier,
+            "verify_signature_with_public_key",
+            side_effect=VerificationError(
+                "Signature verification with public key failed"
+            ),
+        ):
             # Act & Assert
-            with pytest.raises(VerificationError, match="Signature verification with public key failed"):
+            with pytest.raises(
+                VerificationError, match="Signature verification with public key failed"
+            ):
                 verifier.verify_signature_with_public_key(
                     "/invalid/artifact.jar",
                     "/invalid/signature.sig",
-                    "/invalid/public-key.pem"
+                    "/invalid/public-key.pem",
                 )
 
     def test_verify_artifact_size_success(self):
@@ -408,16 +429,16 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         max_size_mb = 100
-        
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             result = verifier.verify_artifact_size(temp_file_path, max_size_mb)
-            
+
             # Assert
             assert result is True
         finally:
@@ -429,13 +450,13 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         max_size_mb = 1  # Very small size limit
-        
+
         # Create a large temporary file
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             # Write 2MB of data
             temp_file.write(b"x" * (2 * 1024 * 1024))
             temp_file_path = temp_file.name
-        
+
         try:
             # Act & Assert
             with pytest.raises(VerificationError, match="Artifact size exceeds limit"):
@@ -448,16 +469,16 @@ class TestArtifactVerifier:
         """Test successful artifact permissions verification."""
         # Arrange
         verifier = ArtifactVerifier()
-        
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             temp_file.write(b"test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Act
             result = verifier.verify_artifact_permissions(temp_file_path)
-            
+
             # Assert
             assert result is True
         finally:
@@ -469,9 +490,11 @@ class TestArtifactVerifier:
         # Arrange
         verifier = ArtifactVerifier()
         inaccessible_path = "/root/inaccessible-file.jar"
-        
+
         # Act & Assert
-        with pytest.raises(VerificationError, match="Artifact permissions verification failed"):
+        with pytest.raises(
+            VerificationError, match="Artifact permissions verification failed"
+        ):
             verifier.verify_artifact_permissions(inaccessible_path)
 
 
@@ -485,9 +508,9 @@ class TestVerificationResult:
             success=True,
             verification_type="digital_signature",
             artifact_path="/path/to/artifact.jar",
-            verified_at="2024-01-01T00:00:00Z"
+            verified_at="2024-01-01T00:00:00Z",
         )
-        
+
         # Assert
         assert result.success is True
         assert result.verification_type == "digital_signature"
@@ -500,9 +523,9 @@ class TestVerificationResult:
         result = VerificationResult(
             success=False,
             verification_type="checksum",
-            error_message="Checksum verification failed"
+            error_message="Checksum verification failed",
         )
-        
+
         # Assert
         assert result.success is False
         assert result.verification_type == "checksum"
@@ -514,16 +537,16 @@ class TestVerificationResult:
         metadata = {
             "file_size": 1024,
             "checksum": "a1b2c3d4e5f6",
-            "signature_algorithm": "RSA-SHA256"
+            "signature_algorithm": "RSA-SHA256",
         }
         result = VerificationResult(
             success=True,
             verification_type="all_checks",
             artifact_path="/path/to/artifact.jar",
-            metadata=metadata
+            metadata=metadata,
         )
-        
+
         # Assert
         assert result.metadata == metadata
         assert result.metadata["file_size"] == 1024
-        assert result.metadata["checksum"] == "a1b2c3d4e5f6" 
+        assert result.metadata["checksum"] == "a1b2c3d4e5f6"
