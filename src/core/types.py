@@ -169,7 +169,7 @@ MetricValue = Union[int, float, str]
 DatabaseValue = Union[str, int, float, bool, None]
 
 
-class StrictJobSpecManager:
+class JobSpecManager:
     """Strictly typed job specification manager interface."""
     
     def load_all_specs(self) -> List[JobSpecDict]:
@@ -245,12 +245,12 @@ def is_valid_job_id(value: str) -> bool:
 
 def is_valid_cron_expression(value: str) -> bool:
     """Type guard for cron expression validation."""
-    try:
-        import croniter
-        croniter.croniter(value)
-        return True
-    except (ValueError, TypeError):
-        return False
+    # Simple validation for standard 5-field cron expressions
+    import re
+    cron_pattern = re.compile(
+        r'^(\*|[0-5]?\d)\s+(\*|1?\d|2[0-3])\s+(\*|[12]?\d|3[01])\s+(\*|[1-9]|1[0-2])\s+(\*|[0-6])$'
+    )
+    return bool(cron_pattern.match(value.strip()))
 
 
 def is_valid_artifact_path(value: str) -> bool:
