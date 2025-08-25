@@ -72,13 +72,16 @@ Build a declarative, production-ready Flink job lifecycle controller that:
 
 ## 🚀 **REMAINING IMPLEMENTATION ROADMAP** 
 
-### 🟡 **NEXT PHASE - Job Type Expansion (Priority 5)**
+### ✅ **COMPLETED - Job Type Expansion (Priority 5)**
 
-#### 5.1 **Scheduled Jobs Implementation** 
-- 🔲 Cron-based job scheduling with timezone support
-- 🔲 Job execution history and retry logic
-- 🔲 Schedule conflict detection and resolution
-- 🔲 Time-based job lifecycle management
+#### 5.1 **Scheduled Jobs Implementation** ✅ **COMPLETED**
+- ✅ Cron-based job scheduling with timezone support
+- ✅ Job execution history and retry logic with comprehensive tracking
+- ✅ Schedule validation and cron expression parsing
+- ✅ Time-based job lifecycle management with timeout handling
+- ✅ Integration with existing reconciler via `ScheduledJobReconciler`
+- ✅ Comprehensive test suite (34 unit tests + 8 integration tests)
+- ✅ Working example demonstrating scheduled job functionality
 
 #### 5.2 **Pipeline Job Support**
 - 🔲 Multi-stage job dependency management
@@ -157,8 +160,8 @@ flink-job-controller/
 │   │   ├── jobs_strict.py       ✅ Strictly typed job manager (NEW)
 │   │   ├── flink_client.py      ✅ Flink REST API client (COMPLETE) 
 │   │   ├── tracker.py           ✅ Change detection and state tracking (COMPLETE)
-│   │   ├── reconciler.py        ✅ Basic reconciliation logic (COMPLETE)
-│   │   ├── reconciler_fixed.py  ✅ Production reconciler (NEW - COMPLETE)
+│   │   ├── reconciler.py        ✅ Production reconciler with scheduled job support (COMPLETE)
+│   │   ├── scheduler.py         ✅ Scheduled job management (NEW - COMPLETE)
 │   │   ├── types.py             ✅ Strict type definitions (NEW - COMPLETE)
 │   │   ├── exceptions.py        ✅ Exception hierarchy (COMPLETE)
 │   │   └── performance.py       ✅ Performance optimizations (NEW - COMPLETE)
@@ -750,3 +753,194 @@ The Flink Job Controller has achieved a **solid production-ready foundation** wi
 - **Production-ready architecture** - Protocol-based design with strict validation
 
 **Next Priority**: Expand job type support (scheduled jobs and pipelines) to enable advanced use cases while maintaining the high-quality foundation established.
+
+---
+
+## 🧹 **CLEANUP & CONSOLIDATION PLAN**
+
+### **Phase 0 - Code Consolidation (Immediate Priority)**
+
+#### 🔄 **File Consolidation Strategy**
+
+**Problem**: We currently have dual implementations that need to be merged:
+- `src/core/reconciler.py` (77% coverage, basic implementation) 
+- `src/core/reconciler_fixed.py` (100% coverage, production-ready)
+- `src/core/jobs.py` (basic job management)
+- `src/core/jobs_strict.py` (strictly typed implementation)
+
+#### ✅ **Consolidation Tasks**
+
+1. **Reconciler Consolidation** 
+   ```bash
+   # Replace old reconciler with production version
+   mv src/core/reconciler_fixed.py src/core/reconciler.py
+   # Update imports throughout codebase
+   # Remove deprecated reconciler_fixed.py
+   ```
+
+2. **Job Manager Consolidation**
+   ```bash
+   # Merge strict typing into main job manager
+   # Consolidate src/core/jobs_strict.py -> src/core/jobs.py
+   # Preserve all strict typing and validation features
+   ```
+
+3. **Test Suite Consolidation**
+   ```bash
+   # Move production tests to standard test file
+   mv tests/unit/test_production_reconciler.py tests/unit/test_reconciler.py
+   # Update test imports and references
+   # Ensure 100% coverage maintained
+   ```
+
+#### 🗑️ **Deprecated Files to Remove**
+```
+├── src/core/reconciler_fixed.py     ❌ DELETE (merge into reconciler.py)
+├── src/core/jobs_strict.py          ❌ DELETE (merge into jobs.py)  
+├── tests/unit/test_production_reconciler.py ❌ DELETE (merge into test_reconciler.py)
+```
+
+#### 📝 **Import Updates Required**
+```python
+# Update these imports throughout codebase:
+# OLD:
+from src.core.reconciler_fixed import ProductionJobReconciler
+from src.core.jobs_strict import StrictJobSpecManager
+
+# NEW: 
+from src.core.reconciler import JobReconciler  # Now production-ready
+from src.core.jobs import JobSpecManager       # Now strictly typed
+```
+
+### **Phase 0.1 - Code Quality Improvements**
+
+#### 🔧 **Technical Debt Resolution**
+
+1. **Fix AsyncMock Warning** 
+   ```python
+   # Address RuntimeWarning in test_reconcile_job_concurrent_timeout_cleanup
+   # Properly configure async mock returns to avoid coroutine warnings
+   ```
+
+2. **Standardize Error Context** 
+   ```python
+   # Ensure all exceptions have consistent context structure
+   # Validate Dict[str, str] constraints across all error types
+   ```
+
+3. **Configuration Consolidation**
+   ```python
+   # Create single ReconcilerConfig class
+   # Remove duplicate configuration patterns
+   # Centralize all timeout and limit settings
+   ```
+
+### **Phase 0.2 - Documentation Cleanup**
+
+#### 📚 **Documentation Updates**
+
+1. **API Documentation** 
+   ```markdown
+   # Update all docstrings to reflect final implementations
+   # Remove references to "fixed" versions
+   # Document Protocol interfaces and type safety features
+   ```
+
+2. **README Update**
+   ```markdown
+   # Update README.md with:
+   # - Current architecture (Protocol-based)
+   # - Test coverage achievements (100%)  
+   # - Performance optimizations implemented
+   # - Type safety accomplishments
+   ```
+
+3. **Code Comments Cleanup**
+   ```python
+   # Remove "FIXED" comments from production code
+   # Update comments to reflect final implementation decisions
+   # Add performance optimization explanations
+   ```
+
+### **Phase 0.3 - Quality Assurance**
+
+#### 🧪 **Post-Consolidation Validation**
+
+1. **Full Test Suite Execution**
+   ```bash
+   # Verify 100% test coverage maintained after consolidation
+   python -m pytest tests/unit/ -v --cov=src/core --cov-report=html
+   # Target: 42+ tests, 100% passing, 100% coverage
+   ```
+
+2. **Type Checking Validation**
+   ```bash  
+   # Ensure no mypy errors after consolidation
+   mypy src/core/ --strict
+   # Target: Zero type errors, strict mode compliance
+   ```
+
+3. **Performance Regression Testing**
+   ```bash
+   # Validate performance optimizations still work
+   # Test concurrent reconciliation limits
+   # Verify caching and batching functionality
+   ```
+
+### **Phase 0.4 - Integration Testing**
+
+#### 🔗 **End-to-End Validation**
+
+1. **Demo Script Update**
+   ```python
+   # Update demo.py to use consolidated classes
+   # Verify full reconciliation workflow still works
+   # Test with multiple job types and scenarios
+   ```
+
+2. **Integration Test Suite**
+   ```python
+   # Create integration tests for consolidated components
+   # Test real Flink cluster interaction (if available)
+   # Validate error handling in real scenarios
+   ```
+
+### **Timeline for Cleanup Phase**
+
+```
+Week 1: Code Consolidation
+├── Day 1-2: Reconciler consolidation and import updates
+├── Day 3-4: Job manager consolidation and validation  
+├── Day 5: Test suite consolidation and execution
+└── Weekend: Documentation updates
+
+Week 2: Quality Assurance  
+├── Day 1-2: Technical debt resolution
+├── Day 3-4: Integration testing and validation
+├── Day 5: Final quality checks and regression testing
+└── Complete: Ready for Phase 5 (Job Type Expansion)
+```
+
+### **Success Criteria for Cleanup**
+
+✅ **Consolidated Codebase**
+- Single reconciler implementation (production-ready)
+- Single job manager (strictly typed)
+- Clean import structure throughout
+
+✅ **Maintained Quality** 
+- 100% test coverage preserved
+- Zero type errors in strict mode
+- All performance optimizations functional
+
+✅ **Clean Architecture**
+- No duplicate implementations  
+- Consistent naming conventions
+- Proper separation of concerns
+
+✅ **Documentation Currency**
+- Updated API documentation
+- Current README and guides
+- Clean code comments
+
+**Outcome**: A **clean, consolidated codebase** ready for advanced feature development with no technical debt and maintained quality standards.
